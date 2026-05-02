@@ -98,7 +98,7 @@ function MovimentacaoForm({
     ALTURAS.every((k) => alturas[k] !== '')
 
   const handleSalvar = async () => {
-    if (!isValido || tipo === '') return
+   if (!isValido || !tipo) return
     setLoading(true)
     setErro('')
     try {
