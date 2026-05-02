@@ -93,21 +93,27 @@ function MovimentacaoForm({
     : piquetes
 
   const isValido =
-    data !== '' && loteId !== '' && piqueteId !== '' && tipo !== '' &&
+    data !== '' && loteId !== '' && piqueteId !== '' && !!tipo &&
     (tipo === 'Saída' || quantidade !== '') &&
     ALTURAS.every((k) => alturas[k] !== '')
 
   const handleSalvar = async () => {
-   if (!isValido || !tipo) return
+   if (!isValido) return
+   if (tipo !== 'Entrada' && tipo !== 'Saída') return
     setLoading(true)
     setErro('')
     try {
       await onSalvar({
-        data, lote_id: loteId, piquete_id: piqueteId, tipo_operacao: tipo,
+        data,
+        lote_id: loteId,
+        piquete_id: piqueteId,
+        tipo_operacao: tipo, // agora o TS sabe que é válido
         quantidade: quantidade ? Number(quantidade) : null,
         observacao: observacao.trim() || null,
-        altura1: Number(alturas.altura1), altura2: Number(alturas.altura2),
-        altura3: Number(alturas.altura3), altura4: Number(alturas.altura4),
+        altura1: Number(alturas.altura1),
+        altura2: Number(alturas.altura2),
+        altura3: Number(alturas.altura3),
+        altura4: Number(alturas.altura4),
         altura5: Number(alturas.altura5),
       })
     } catch (e: unknown) {
