@@ -107,7 +107,7 @@ function AtividadeForm({
   }
 
   const handleSalvar = async () => {
-    if (!isValido || tipo === '') return
+    if (!isValido || !tipo) return
     setLoading(true)
     setErro('')
     try {
