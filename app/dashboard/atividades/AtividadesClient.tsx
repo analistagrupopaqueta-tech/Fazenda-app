@@ -29,6 +29,13 @@ const UNIDADES: Record<string, string[]> = {
   Herbicida: ['Baldes', 'Jatão'],
 }
 
+const VOLUME_OPCOES: Record<string, number[]> = {
+  'Herbicida-Baldes': [5, 10, 15, 20],
+  'Herbicida-Jatão': [100, 150, 200, 250, 300, 350, 400],
+  'Adubação-Sacos': [25, 30, 40, 50],
+  'Adubação-Kg': Array.from({ length: 20 }, (_, i) => (i + 1) * 5),
+}
+
 const PRODUTOS = ['Ureia', 'Super simples', 'Calcário', 'Tiririca', 'Amargosa', 'Capim']
 const TIPOS: TipoAtividade[] = ['Adubação', 'Herbicida', 'Roçagem']
 
@@ -86,6 +93,8 @@ function AtividadeForm({
   const [excluindo, setExcluindo] = useState(false)
   const [confirmarExclusao, setConfirmarExclusao] = useState(false)
   const [erro, setErro] = useState('')
+
+  const volumeOpcoes = tipo && unidade ? (VOLUME_OPCOES[`${tipo}-${unidade}`] ?? null) : null
 
   const temProduto = tipo === 'Herbicida' || tipo === 'Roçagem'
   const produtoObrigatorio = tipo === 'Herbicida'
@@ -250,7 +259,7 @@ function AtividadeForm({
                   <button
                     key={u}
                     type="button"
-                    onClick={() => setUnidade(u)}
+                    onClick={() => { setUnidade(u); setVolume('') }}
                     disabled={loading || excluindo}
                     className={`flex-1 px-3 py-2 rounded-lg font-poppins text-sm border-2 transition-colors ${
                       unidade === u
@@ -267,16 +276,30 @@ function AtividadeForm({
               <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
                 Volume <span className="text-[var(--error)]">*</span>
               </label>
-              <input
-                type="number"
-                value={volume}
-                onChange={(e) => setVolume(e.target.value)}
-                placeholder="Qtd."
-                min="0"
-                step="0.1"
-                disabled={loading || excluindo}
-                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition"
-              />
+              {volumeOpcoes ? (
+                <select
+                  value={volume}
+                  onChange={(e) => setVolume(e.target.value)}
+                  disabled={loading || excluindo}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition bg-white"
+                >
+                  <option value="">Selecione...</option>
+                  {volumeOpcoes.map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  value={volume}
+                  onChange={(e) => setVolume(e.target.value)}
+                  placeholder="Qtd."
+                  min="0"
+                  step="0.1"
+                  disabled={loading || excluindo}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition"
+                />
+              )}
             </div>
           </div>
         )}
