@@ -92,7 +92,7 @@ export default function DashboardNav({ isGestor, nome }: Props) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[56px] ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] ${
                 isActive(item.href) ? 'text-white' : 'text-white/60'
               }`}
             >
@@ -106,7 +106,7 @@ export default function DashboardNav({ isGestor, nome }: Props) {
           {isGestor && (
             <Link
               href="/dashboard/lotes"
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[56px] ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] ${
                 isActive('/dashboard/lotes') ? 'text-white' : 'text-white/60'
               }`}
             >
@@ -114,6 +114,17 @@ export default function DashboardNav({ isGestor, nome }: Props) {
               <span className="text-[10px] font-poppins leading-none">Lotes</span>
             </Link>
           )}
+
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] text-white/60 hover:text-white disabled:opacity-50"
+          >
+            <span className="text-xl leading-none">🚪</span>
+            <span className="text-[10px] font-poppins leading-none">
+              {loggingOut ? 'Saindo' : 'Sair'}
+            </span>
+          </button>
         </div>
       </nav>
     </>
