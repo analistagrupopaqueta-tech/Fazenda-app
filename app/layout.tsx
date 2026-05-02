@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Merriweather, Poppins } from "next/font/google";
 import "./globals.css";
+import RegisterSW from "./components/RegisterSW";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +26,22 @@ const poppins = Poppins({
   weight: ["400", "600", "700"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#1a4731",
+};
+
 export const metadata: Metadata = {
   title: "Fazenda Viçosa",
   description: "Plataforma de gestão para propriedades rurais",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Fazenda Viçosa",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -40,7 +54,10 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} ${poppins.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <RegisterSW />
+        {children}
+      </body>
     </html>
   );
 }
