@@ -44,6 +44,24 @@ export default function DashboardNav({ isGestor, nome }: Props) {
 
   return (
     <>
+      {/* Header — mobile */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 bg-[var(--primary)] text-white z-40 shadow-md">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div>
+            <p className="text-xs text-white/60 font-poppins leading-none">Olá,</p>
+            <p className="text-sm font-semibold font-poppins truncate max-w-[200px]">{nome}</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-poppins transition-colors disabled:opacity-50"
+          >
+            <span className="text-base">🚪</span>
+            <span>{loggingOut ? 'Saindo...' : 'Sair'}</span>
+          </button>
+        </div>
+      </header>
+
       {/* Sidebar — desktop */}
       <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-64 bg-[var(--primary)] text-white shadow-xl z-40">
         <div className="px-6 py-6 border-b border-white/10">
@@ -115,16 +133,6 @@ export default function DashboardNav({ isGestor, nome }: Props) {
             </Link>
           )}
 
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] text-white/60 hover:text-white disabled:opacity-50"
-          >
-            <span className="text-xl leading-none">🚪</span>
-            <span className="text-[10px] font-poppins leading-none">
-              {loggingOut ? 'Saindo' : 'Sair'}
-            </span>
-          </button>
         </div>
       </nav>
     </>

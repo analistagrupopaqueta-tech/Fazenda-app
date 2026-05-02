@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col lg:flex-row">
       <DashboardNav isGestor={isGestor} nome={nome} />
-      <main className="flex-1 pb-20 lg:pb-0 lg:ml-64">
+      <main className="flex-1 pt-14 pb-20 lg:pt-0 lg:pb-0 lg:ml-64">
         <div className="max-w-4xl mx-auto px-4 py-6">
           {children}
         </div>
