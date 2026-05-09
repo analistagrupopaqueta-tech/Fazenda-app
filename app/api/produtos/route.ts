@@ -2,16 +2,12 @@ import { createClient } from '@/app/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
-    const { id } = await params
-    const { nome, area_ha, aproveitamento_pasto, ativo } = await request.json()
+    const { nome, categoria } = await request.json()
 
-    if (!nome?.trim()) {
-      return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
+    if (!nome?.trim() || !categoria) {
+      return NextResponse.json({ error: 'Nome e categoria são obrigatórios' }, { status: 400 })
     }
 
     const cookieStore = await cookies()
@@ -34,25 +30,20 @@ export async function PUT(
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
-    const { error } = await supabase
-      .from('piquete')
-      .update({
-        nome: nome.trim(),
-        area_ha: area_ha ? Number(area_ha) : null,
-        aproveitamento_pasto: aproveitamento_pasto ? Number(aproveitamento_pasto) : null,
-        ativo: ativo ?? true,
-      })
-      .eq('id', id)
-      .eq('fazenda_id', fazenda_id)
+    const { error } = await supabase.from('produto').insert({
+      nome: nome.trim(),
+      categoria,
+      fazenda_id,
+    })
 
     if (error) {
       console.error('Supabase error:', error)
-      return NextResponse.json({ error: 'Erro ao atualizar piquete' }, { status: 500 })
+      return NextResponse.json({ error: 'Erro ao salvar produto' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true }, { status: 201 })
   } catch (err) {
-    console.error('PUT /api/piquetes/[id] error:', err)
+    console.error('POST /api/produtos error:', err)
     return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 })
   }
 }

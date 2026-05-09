@@ -16,6 +16,7 @@ export type Piquete = {
   id: string
   nome: string
   area_ha: number | null
+  aproveitamento_pasto: number | null
   ativo: boolean
 }
 
@@ -191,6 +192,7 @@ function PiqueteForm({
   const [campos, setCampos] = useState({
     nome: inicial?.nome ?? '',
     area_ha: inicial?.area_ha?.toString() ?? '',
+    aproveitamento_pasto: inicial?.aproveitamento_pasto?.toString() ?? '',
     ativo: inicial?.ativo ?? true,
   })
   const [loading, setLoading] = useState(false)
@@ -206,6 +208,7 @@ function PiqueteForm({
       await onSalvar({
         nome: campos.nome,
         area_ha: campos.area_ha || null,
+        aproveitamento_pasto: campos.aproveitamento_pasto || null,
         ativo: campos.ativo,
       })
     } catch {
@@ -247,6 +250,22 @@ function PiqueteForm({
             placeholder="Ex: 5.2"
             min="0"
             step="0.01"
+            disabled={loading}
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
+            Aproveitamento (%)
+          </label>
+          <input
+            type="number"
+            value={campos.aproveitamento_pasto}
+            onChange={(e) => setCampos({ ...campos, aproveitamento_pasto: e.target.value })}
+            placeholder="0 a 100"
+            min="0"
+            max="100"
             disabled={loading}
             className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition"
           />
@@ -545,11 +564,18 @@ export default function LotesClient({
                               </span>
                             )}
                           </div>
-                          {piquete.area_ha != null && (
-                            <span className="text-xs text-gray-600 font-poppins mt-0.5 block">
-                              📐 {piquete.area_ha} ha
-                            </span>
-                          )}
+                          <div className="flex gap-4 mt-0.5">
+                            {piquete.area_ha != null && (
+                              <span className="text-xs text-gray-600 font-poppins block">
+                                📐 {piquete.area_ha} ha
+                              </span>
+                            )}
+                            {piquete.aproveitamento_pasto != null && (
+                              <span className="text-xs text-gray-600 font-poppins block">
+                                🌿 {piquete.aproveitamento_pasto}% aprov.
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <button
                           onClick={() => {

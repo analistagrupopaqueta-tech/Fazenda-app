@@ -1,5 +1,6 @@
 import { createClient } from '@/app/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,6 +8,12 @@ export async function POST(request: NextRequest) {
 
     if (!nome?.trim()) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
+    }
+
+    const cookieStore = await cookies()
+    const fazenda_id = cookieStore.get('fazenda_id')?.value
+    if (!fazenda_id) {
+      return NextResponse.json({ error: 'Fazenda não selecionada' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -28,6 +35,7 @@ export async function POST(request: NextRequest) {
       descricao: descricao?.trim() || null,
       num_animais: num_animais ? Number(num_animais) : null,
       peso_medio_kg: peso_medio_kg ? Number(peso_medio_kg) : null,
+      fazenda_id,
     })
 
     if (error) {

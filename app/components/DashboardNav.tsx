@@ -17,19 +17,29 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard/movimentacao', label: 'Gado', icon: '🐄' },
   { href: '/dashboard/cocho', label: 'Cocho', icon: '🌾' },
   { href: '/dashboard/atividades', label: 'Atividades', icon: '🚜' },
+  { href: '/dashboard/produtos', label: 'Produtos', icon: '🧪', gestorOnly: true },
   { href: '/dashboard/lotes', label: 'Lotes', icon: '📋', gestorOnly: true },
+  { href: '/dashboard/fazendas', label: 'Fazendas', icon: '🌾', gestorOnly: true },
   { href: '/dashboard/usuarios', label: 'Usuários', icon: '👥', gestorOnly: true },
 ]
+
+type Fazenda = {
+  id: string
+  nome: string
+}
 
 type Props = {
   isGestor: boolean
   nome: string
+  fazendas: Fazenda[]
+  activeFazendaId: string
 }
 
-export default function DashboardNav({ isGestor, nome }: Props) {
+export default function DashboardNav({ isGestor, nome, fazendas, activeFazendaId }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
+  const [changingFazenda, setChangingFazenda] = useState(false)
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.gestorOnly || isGestor)
 
@@ -37,6 +47,20 @@ export default function DashboardNav({ isGestor, nome }: Props) {
     setLoggingOut(true)
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
+  }
+
+  const handleFazendaChange = async (fazendaId: string) => {
+    if (fazendaId === activeFazendaId) return
+    setChangingFazenda(true)
+    
+    await fetch('/api/fazendas/ativa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fazenda_id: fazendaId })
+    })
+    
+    // Força o reload completo da aplicação para resetar o estado de todos os Server Components
+    window.location.href = '/dashboard'
   }
 
   const isActive = (href: string) =>
@@ -66,12 +90,32 @@ export default function DashboardNav({ isGestor, nome }: Props) {
       <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-64 bg-[var(--primary)] text-white shadow-xl z-40">
         <div className="px-6 py-6 border-b border-white/10">
           <h1 className="text-xl font-bold font-merriweather">🌾 Fazenda Viçosa</h1>
-          <p className="text-sm text-white/70 font-poppins mt-1 truncate">{nome}</p>
-          {isGestor && (
-            <span className="inline-block mt-1 text-xs bg-[var(--accent)] text-white px-2 py-0.5 rounded-full font-poppins">
-              Gestor
-            </span>
-          )}
+          
+          {/* Seletor de Fazenda Ativa */}
+          <div className="mt-4 bg-white/5 rounded-lg p-2 border border-white/10 relative">
+            <label className="text-[10px] uppercase tracking-wider text-white/50 font-poppins block mb-1 px-1">Fazenda Ativa</label>
+            <select 
+              value={activeFazendaId}
+              onChange={(e) => handleFazendaChange(e.target.value)}
+              disabled={changingFazenda || fazendas.length === 0}
+              className="w-full bg-transparent text-white font-poppins text-sm font-semibold focus:outline-none appearance-none cursor-pointer px-1 py-0.5"
+            >
+              {fazendas.length === 0 && <option value="">Nenhuma fazenda</option>}
+              {fazendas.map(f => (
+                <option key={f.id} value={f.id} className="text-black">{f.nome}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-[26px] pointer-events-none text-white/50 text-xs">▼</div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-white/70 font-poppins truncate">{nome}</p>
+            {isGestor && (
+              <span className="text-[10px] bg-[var(--accent)] text-white px-2 py-0.5 rounded-full font-poppins uppercase tracking-wider font-bold">
+                Gestor
+              </span>
+            )}
+          </div>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

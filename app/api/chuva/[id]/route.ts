@@ -1,5 +1,6 @@
 import { createClient } from '@/app/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function PUT(
   request: NextRequest,
@@ -18,6 +19,12 @@ export async function PUT(
       return NextResponse.json({ error: 'Volume deve ser um número positivo' }, { status: 400 })
     }
 
+    const cookieStore = await cookies()
+    const fazenda_id = cookieStore.get('fazenda_id')?.value
+    if (!fazenda_id) {
+      return NextResponse.json({ error: 'Fazenda não selecionada' }, { status: 400 })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -26,6 +33,7 @@ export async function PUT(
       .from('chuva')
       .update({ data, volume_mm: volumeNum, observacao: observacao?.trim() || null })
       .eq('id', id)
+      .eq('fazenda_id', fazenda_id)
 
     if (error) {
       console.error('Supabase error:', error)
@@ -46,11 +54,17 @@ export async function DELETE(
   try {
     const { id } = await params
 
+    const cookieStore = await cookies()
+    const fazenda_id = cookieStore.get('fazenda_id')?.value
+    if (!fazenda_id) {
+      return NextResponse.json({ error: 'Fazenda não selecionada' }, { status: 400 })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-    const { error } = await supabase.from('chuva').delete().eq('id', id)
+    const { error } = await supabase.from('chuva').delete().eq('id', id).eq('fazenda_id', fazenda_id)
 
     if (error) {
       console.error('Supabase error:', error)

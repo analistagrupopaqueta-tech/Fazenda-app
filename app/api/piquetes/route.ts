@@ -1,12 +1,19 @@
 import { createClient } from '@/app/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
-    const { nome, area_ha } = await request.json()
+    const { nome, area_ha, aproveitamento_pasto } = await request.json()
 
     if (!nome?.trim()) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
+    }
+
+    const cookieStore = await cookies()
+    const fazenda_id = cookieStore.get('fazenda_id')?.value
+    if (!fazenda_id) {
+      return NextResponse.json({ error: 'Fazenda não selecionada' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -26,6 +33,8 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.from('piquete').insert({
       nome: nome.trim(),
       area_ha: area_ha ? Number(area_ha) : null,
+      aproveitamento_pasto: aproveitamento_pasto ? Number(aproveitamento_pasto) : null,
+      fazenda_id,
     })
 
     if (error) {

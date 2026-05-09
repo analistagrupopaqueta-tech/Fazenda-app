@@ -8,7 +8,9 @@ export type Atividade = {
   data: string
   tipo: 'Adubação' | 'Herbicida' | 'Roçagem'
   modalidade: string
-  produto: string | null
+  produto_id: string | null
+  produto: { nome: string } | null
+  quantidade_unidade: number | null
   volume: number | null
   unidade: string | null
   observacao: string | null
@@ -36,7 +38,6 @@ const VOLUME_OPCOES: Record<string, number[]> = {
   'Adubação-Kg': Array.from({ length: 20 }, (_, i) => (i + 1) * 5),
 }
 
-const PRODUTOS = ['Ureia', 'Super simples', 'Calcário', 'Tiririca', 'Amargosa', 'Capim']
 const TIPOS: TipoAtividade[] = ['Adubação', 'Herbicida', 'Roçagem']
 
 const TIPO_ICONS: Record<TipoAtividade, string> = {
@@ -60,7 +61,8 @@ type FormPayload = {
   data: string
   tipo: TipoAtividade
   modalidade: string
-  produto: string | null
+  produto_id: string | null
+  quantidade_unidade: number | null
   volume: number | null
   unidade: string | null
   observacao: string | null
@@ -68,11 +70,13 @@ type FormPayload = {
 
 function AtividadeForm({
   modo,
+  produtos,
   onSalvar,
   onExcluir,
   onCancelar,
 }: {
   modo: Modo
+  produtos: { id: string, nome: string, categoria: string }[]
   onSalvar: (dados: FormPayload) => Promise<void>
   onExcluir?: () => Promise<void>
   onCancelar: () => void
@@ -84,7 +88,8 @@ function AtividadeForm({
   const [data, setData] = useState(inicial?.data ?? hoje)
   const [tipo, setTipo] = useState<TipoAtividade | ''>(inicial?.tipo ?? '')
   const [modalidade, setModalidade] = useState(inicial?.modalidade ?? '')
-  const [produto, setProduto] = useState(inicial?.produto ?? '')
+  const [produtoId, setProdutoId] = useState(inicial?.produto_id ?? '')
+  const [quantidadeUnidade, setQuantidadeUnidade] = useState(inicial?.quantidade_unidade?.toString() ?? '')
   const [volume, setVolume] = useState(inicial?.volume?.toString() ?? '')
   const [unidade, setUnidade] = useState(inicial?.unidade ?? '')
   const [observacao, setObservacao] = useState(inicial?.observacao ?? '')
@@ -99,18 +104,21 @@ function AtividadeForm({
   const temProduto = tipo === 'Herbicida' || tipo === 'Roçagem'
   const produtoObrigatorio = tipo === 'Herbicida'
   const temUnidade = tipo === 'Adubação' || tipo === 'Herbicida'
+  const exigeQuantidadeUnidade = temUnidade && (unidade === 'Sacos' || unidade === 'Baldes')
 
   const isValido =
     data !== '' &&
     tipo !== '' &&
     modalidade !== '' &&
-    (!produtoObrigatorio || produto !== '') &&
-    (!temUnidade || (unidade !== '' && volume !== ''))
+    (!produtoObrigatorio || produtoId !== '') &&
+    (!temUnidade || (unidade !== '' && volume !== '')) &&
+    (!exigeQuantidadeUnidade || quantidadeUnidade !== '')
 
   const handleTipo = (t: TipoAtividade) => {
     setTipo(t)
     setModalidade('')
-    setProduto('')
+    setProdutoId('')
+    setQuantidadeUnidade('')
     setVolume('')
     setUnidade('')
   }
@@ -124,7 +132,8 @@ function AtividadeForm({
         data,
         tipo,
         modalidade,
-        produto: temProduto && produto ? produto : null,
+        produto_id: temProduto && produtoId ? produtoId : null,
+        quantidade_unidade: exigeQuantidadeUnidade && quantidadeUnidade ? Number(quantidadeUnidade) : null,
         volume: temUnidade && volume ? Number(volume) : null,
         unidade: temUnidade && unidade ? unidade : null,
         observacao: observacao.trim() || null,
@@ -234,14 +243,14 @@ function AtividadeForm({
               }
             </label>
             <select
-              value={produto}
-              onChange={(e) => setProduto(e.target.value)}
+              value={produtoId}
+              onChange={(e) => setProdutoId(e.target.value)}
               disabled={loading || excluindo}
               className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition bg-white"
             >
               <option value="">Selecione...</option>
-              {PRODUTOS.map((p) => (
-                <option key={p} value={p}>{p}</option>
+              {produtos.filter(p => p.categoria === tipo).map((p) => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
               ))}
             </select>
           </div>
@@ -259,7 +268,7 @@ function AtividadeForm({
                   <button
                     key={u}
                     type="button"
-                    onClick={() => { setUnidade(u); setVolume('') }}
+                    onClick={() => { setUnidade(u); setVolume(''); setQuantidadeUnidade('') }}
                     disabled={loading || excluindo}
                     className={`flex-1 px-3 py-2 rounded-lg font-poppins text-sm border-2 transition-colors ${
                       unidade === u
@@ -301,6 +310,22 @@ function AtividadeForm({
                 />
               )}
             </div>
+            {exigeQuantidadeUnidade && (
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
+                  Quantidade ({unidade}) <span className="text-[var(--error)]">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={quantidadeUnidade}
+                  onChange={(e) => setQuantidadeUnidade(e.target.value)}
+                  placeholder={`Quantos ${unidade?.toLowerCase()}?`}
+                  min="0"
+                  disabled={loading || excluindo}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -386,7 +411,7 @@ function AtividadeForm({
   )
 }
 
-export default function AtividadesClient({ atividades }: { atividades: Atividade[] }) {
+export default function AtividadesClient({ atividades, produtosDisponiveis }: { atividades: Atividade[], produtosDisponiveis: { id: string, nome: string, categoria: string }[] }) {
   const router = useRouter()
   const [modo, setModo] = useState<Modo | null>(null)
   const [sucesso, setSucesso] = useState('')
@@ -451,6 +476,7 @@ export default function AtividadesClient({ atividades }: { atividades: Atividade
       {modo?.tipo === 'criar' && (
         <AtividadeForm
           modo={modo}
+          produtos={produtosDisponiveis}
           onSalvar={handleCriar}
           onCancelar={() => setModo(null)}
         />
@@ -469,6 +495,7 @@ export default function AtividadesClient({ atividades }: { atividades: Atividade
               {modo?.tipo === 'editar' && modo.atividade.id === a.id ? (
                 <AtividadeForm
                   modo={modo}
+                  produtos={produtosDisponiveis}
                   onSalvar={(dados) => handleEditar(a.id, dados)}
                   onExcluir={() => handleExcluir(a.id)}
                   onCancelar={() => setModo(null)}
@@ -494,12 +521,12 @@ export default function AtividadesClient({ atividades }: { atividades: Atividade
                         </span>
                         {a.produto && (
                           <span className="text-xs text-gray-500 font-poppins">
-                            🧪 {a.produto}
+                            🧪 {a.produto.nome}
                           </span>
                         )}
                         {a.volume != null && a.unidade && (
                           <span className="text-xs text-gray-500 font-poppins">
-                            📦 {a.volume} {a.unidade}
+                            📦 {a.volume} {a.unidade} {a.quantidade_unidade ? `(${a.quantidade_unidade})` : ''}
                           </span>
                         )}
                       </div>

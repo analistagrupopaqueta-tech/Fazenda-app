@@ -1,5 +1,6 @@
 import { createClient } from '@/app/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function PUT(
   request: NextRequest,
@@ -9,7 +10,7 @@ export async function PUT(
     const { id } = await params
     const {
       data, lote_id, piquete_id, tipo_operacao,
-      quantidade, observacao,
+      quantidade, qualidade, observacao,
       altura1, altura2, altura3, altura4, altura5,
     } = await request.json()
 
@@ -32,11 +33,18 @@ export async function PUT(
     }
 
     const alturas = [altura1, altura2, altura3, altura4, altura5]
-    if (alturas.filter((a) => a != null && a !== '').length < 5) {
+    const alturasPreenchidas = alturas.filter((a) => a != null && a !== '')
+    if (alturasPreenchidas.length > 0 && alturasPreenchidas.length < 5) {
       return NextResponse.json(
-        { error: 'As 5 medições de altura do pasto são obrigatórias' },
+        { error: 'Para registrar a medição, preencha as 5 alturas ou nenhuma' },
         { status: 400 }
       )
+    }
+
+    const cookieStore = await cookies()
+    const fazenda_id = cookieStore.get('fazenda_id')?.value
+    if (!fazenda_id) {
+      return NextResponse.json({ error: 'Fazenda não selecionada' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -51,14 +59,16 @@ export async function PUT(
         piquete_id,
         tipo_operacao,
         quantidade: quantidade ? Number(quantidade) : null,
+        qualidade: qualidade || null,
         observacao: observacao?.trim() || null,
-        altura1: Number(altura1),
-        altura2: Number(altura2),
-        altura3: Number(altura3),
-        altura4: Number(altura4),
-        altura5: Number(altura5),
+        altura1: altura1 ? Number(altura1) : null,
+        altura2: altura2 ? Number(altura2) : null,
+        altura3: altura3 ? Number(altura3) : null,
+        altura4: altura4 ? Number(altura4) : null,
+        altura5: altura5 ? Number(altura5) : null,
       })
       .eq('id', id)
+      .eq('fazenda_id', fazenda_id)
 
     if (error) {
       console.error('Supabase error:', error)
@@ -79,11 +89,17 @@ export async function DELETE(
   try {
     const { id } = await params
 
+    const cookieStore = await cookies()
+    const fazenda_id = cookieStore.get('fazenda_id')?.value
+    if (!fazenda_id) {
+      return NextResponse.json({ error: 'Fazenda não selecionada' }, { status: 400 })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-    const { error } = await supabase.from('movimentacao_gado').delete().eq('id', id)
+    const { error } = await supabase.from('movimentacao_gado').delete().eq('id', id).eq('fazenda_id', fazenda_id)
 
     if (error) {
       console.error('Supabase error:', error)

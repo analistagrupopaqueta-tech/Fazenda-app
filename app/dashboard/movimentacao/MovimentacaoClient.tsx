@@ -17,6 +17,7 @@ export type Movimentacao = {
   observacao: string | null
   lote_id: string
   piquete_id: string
+  qualidade: 'Bom' | 'Sementado' | 'Seco' | null
   lote: { nome: string }
   piquete: { nome: string }
 }
@@ -42,8 +43,9 @@ function formatarData(dataISO: string) {
 type FormPayload = {
   data: string; lote_id: string; piquete_id: string
   tipo_operacao: 'Entrada' | 'Saída'; quantidade: number | null
+  qualidade: 'Bom' | 'Sementado' | 'Seco' | ''
   observacao: string | null
-  altura1: number; altura2: number; altura3: number; altura4: number; altura5: number
+  altura1: number | null; altura2: number | null; altura3: number | null; altura4: number | null; altura5: number | null
 }
 
 function MovimentacaoForm({
@@ -68,6 +70,7 @@ function MovimentacaoForm({
   const [piqueteId, setPiqueteId] = useState(inicial?.piquete_id ?? '')
   const [tipo, setTipo] = useState<'Entrada' | 'Saída' | ''>(inicial?.tipo_operacao ?? '')
   const [quantidade, setQuantidade] = useState(inicial?.quantidade?.toString() ?? '')
+  const [qualidade, setQualidade] = useState<'Bom' | 'Sementado' | 'Seco' | ''>(inicial?.qualidade ?? '')
   const [observacao, setObservacao] = useState(inicial?.observacao ?? '')
   const [alturas, setAlturas] = useState<Record<AlturaKey, string>>({
     altura1: inicial?.altura1?.toString() ?? '',
@@ -92,10 +95,12 @@ function MovimentacaoForm({
     ? piquetes.filter((p) => !piquetesOcupadosFiltrados.includes(p.id))
     : piquetes
 
+  const alturasPreenchidas = ALTURAS.filter((k) => alturas[k] !== '')
+  const alturasValidas = alturasPreenchidas.length === 0 || alturasPreenchidas.length === 5
+
   const isValido =
     data !== '' && loteId !== '' && piqueteId !== '' && !!tipo &&
-    (tipo === 'Saída' || quantidade !== '') &&
-    ALTURAS.every((k) => alturas[k] !== '')
+    (tipo === 'Saída' || quantidade !== '') && alturasValidas
 
   const handleSalvar = async () => {
    if (!isValido) return
@@ -109,12 +114,13 @@ function MovimentacaoForm({
         piquete_id: piqueteId,
         tipo_operacao: tipo, // agora o TS sabe que é válido
         quantidade: quantidade ? Number(quantidade) : null,
+        qualidade: qualidade,
         observacao: observacao.trim() || null,
-        altura1: Number(alturas.altura1),
-        altura2: Number(alturas.altura2),
-        altura3: Number(alturas.altura3),
-        altura4: Number(alturas.altura4),
-        altura5: Number(alturas.altura5),
+        altura1: alturas.altura1 ? Number(alturas.altura1) : null,
+        altura2: alturas.altura2 ? Number(alturas.altura2) : null,
+        altura3: alturas.altura3 ? Number(alturas.altura3) : null,
+        altura4: alturas.altura4 ? Number(alturas.altura4) : null,
+        altura5: alturas.altura5 ? Number(alturas.altura5) : null,
       })
     } catch (e: unknown) {
       setErro(e instanceof Error ? e.message : 'Erro ao salvar')
@@ -238,6 +244,22 @@ function MovimentacaoForm({
           </div>
         )}
 
+        {/* Qualidade do Solo */}
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
+            Qualidade do Solo
+          </label>
+          <select value={qualidade} onChange={(e) => setQualidade(e.target.value as 'Bom' | 'Sementado' | 'Seco' | '')}
+            disabled={loading || excluindo}
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition bg-white"
+          >
+            <option value="">Não informado</option>
+            <option value="Bom">Bom</option>
+            <option value="Sementado">Sementado</option>
+            <option value="Seco">Seco</option>
+          </select>
+        </div>
+
         {/* Observação */}
         <div>
           <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
@@ -249,12 +271,12 @@ function MovimentacaoForm({
           />
         </div>
 
-        {/* Alturas — obrigatório */}
+        {/* Alturas — opcional */}
         <div className="border-t border-gray-100 pt-4">
           <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
-            Altura do pasto (cm) <span className="text-[var(--error)]">*</span>
+            Altura do pasto (cm)
           </label>
-          <p className="text-xs text-gray-500 font-poppins mb-3">Preencha as 5 medições</p>
+          <p className="text-xs text-gray-500 font-poppins mb-3">Tudo ou nada (preencha as 5 ou nenhuma)</p>
           <div className="grid grid-cols-5 gap-2">
             {ALTURAS.map((k, i) => (
               <div key={k}>
@@ -439,6 +461,9 @@ export default function MovimentacaoClient({
                         <span className="text-xs text-gray-500 font-poppins">📅 {formatarData(r.data)}</span>
                         {r.quantidade != null && (
                           <span className="text-xs text-gray-500 font-poppins">🐄 {r.quantidade} animais</span>
+                        )}
+                        {r.qualidade && (
+                          <span className="text-xs text-gray-500 font-poppins">🌱 {r.qualidade}</span>
                         )}
                         {r.media_altura != null && (
                           <span className="text-xs text-gray-500 font-poppins">📏 {Number(r.media_altura).toFixed(1)} cm pasto</span>
