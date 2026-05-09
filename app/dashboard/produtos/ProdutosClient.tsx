@@ -47,7 +47,7 @@ function ProdutoForm({
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
 
-  const isValido = campos.nome.trim() !== '' && campos.categoria !== ''
+  const isValido = campos.nome.trim() !== ''
 
   const handleSalvar = async () => {
     if (!isValido) return
