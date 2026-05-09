@@ -2,7 +2,14 @@ import { createClient } from '@/app/lib/supabase/server'
 import { cookies } from 'next/headers'
 import ChuvaClient, { type RegistroChuva } from './ChuvaClient'
 
-export default async function ChuvaPage() {
+export default async function ChuvaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ de?: string; ate?: string }>
+}) {
+  const params = await searchParams
+  const de = params.de
+  const ate = params.ate
   const supabase = await createClient()
 
   const cookieStore = await cookies()
@@ -11,15 +18,40 @@ export default async function ChuvaPage() {
   let registros = []
   let error = null
 
+  let diasSemChuva = 0
+
   if (fazendaId) {
-    const res = await supabase
+    let query = supabase
       .from('chuva')
       .select('id, data, volume_mm, observacao')
       .eq('fazenda_id', fazendaId)
       .order('data', { ascending: false })
-      .limit(50)
+
+    if (de) query = query.gte('data', de)
+    if (ate) query = query.lte('data', ate)
+    else query = query.limit(50) // Só aplica o limite se não houver filtro 'até' para não quebrar buscas maiores
+
+    const [res, resUltimaChuva] = await Promise.all([
+      query,
+      supabase
+        .from('chuva')
+        .select('data')
+        .eq('fazenda_id', fazendaId)
+        .gt('volume_mm', 0)
+        .order('data', { ascending: false })
+        .limit(1)
+        .single()
+    ])
+    
     registros = res.data || []
     error = res.error
+
+    if (resUltimaChuva.data?.data) {
+      const dataUltima = new Date(resUltimaChuva.data.data)
+      const hoje = new Date()
+      const diffTime = Math.abs(hoje.getTime() - dataUltima.getTime())
+      diasSemChuva = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    }
   }
 
   if (error) console.error('Erro ao buscar chuva:', error)
@@ -37,7 +69,7 @@ export default async function ChuvaPage() {
         </p>
       </div>
 
-      <ChuvaClient registros={lista} />
+      <ChuvaClient registros={lista} diasSemChuva={diasSemChuva} de={de} ate={ate} />
     </div>
   )
 }

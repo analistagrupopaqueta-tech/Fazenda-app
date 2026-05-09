@@ -575,6 +575,11 @@ export default function LotesClient({
                                 🌿 {piquete.aproveitamento_pasto}% aprov.
                               </span>
                             )}
+                            {piquete.area_ha != null && piquete.aproveitamento_pasto != null && (
+                              <span className="text-xs text-gray-600 font-poppins block">
+                                🎯 {((piquete.area_ha * piquete.aproveitamento_pasto) / 100).toFixed(1)} ha útil
+                              </span>
+                            )}
                           </div>
                         </div>
                         <button
