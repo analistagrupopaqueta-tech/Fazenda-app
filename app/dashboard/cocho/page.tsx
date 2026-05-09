@@ -8,8 +8,8 @@ export default async function CochoPage() {
   const cookieStore = await cookies()
   const fazendaId = cookieStore.get('fazenda_id')?.value
 
-  let lotes = []
-  let registros = []
+  let lotes: { id: string; nome: string }[] = []
+  let registros: RegistroCocho[] = []
   let error = null
 
   if (fazendaId) {

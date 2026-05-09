@@ -15,7 +15,7 @@ export default async function ChuvaPage({
   const cookieStore = await cookies()
   const fazendaId = cookieStore.get('fazenda_id')?.value
 
-  let registros = []
+  let registros: RegistroChuva[] = []
   let error = null
 
   let diasSemChuva = 0
