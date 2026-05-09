@@ -34,7 +34,7 @@ export default async function AtividadesPage() {
         .order('nome')
     ])
     
-    atividades = resAtiv.data || []
+    atividades = (resAtiv.data ?? []) as unknown as Atividade[]
     produtos = (resProd.data || []).map((p: any) => ({
       id: p.id,
       nome: p.nome,
