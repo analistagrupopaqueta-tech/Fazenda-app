@@ -8,10 +8,10 @@ export default async function MovimentacaoPage() {
   const cookieStore = await cookies()
   const fazendaId = cookieStore.get('fazenda_id')?.value
 
-  let lotes = []
-  let piquetes = []
-  let registros = []
-  let historico = []
+  let lotes: { id: string; nome: string }[] = []
+  let piquetes: { id: string; nome: string }[] = []
+  let registros: Movimentacao[] = []
+  let historico: { lote_id: string; piquete_id: string; tipo_operacao: string; data: string; created_at: string }[] = []
   let error = null
 
   if (fazendaId) {

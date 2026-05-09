@@ -20,7 +20,7 @@ export default async function ProdutosPage() {
   const cookieStore = await cookies()
   const fazendaId = cookieStore.get('fazenda_id')?.value
 
-  let produtos = []
+  let produtos: Produto[] = []
 
   if (fazendaId) {
     const { data } = await supabase

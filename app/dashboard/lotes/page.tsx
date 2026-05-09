@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/app/lib/supabase/server'
 import { cookies } from 'next/headers'
-import LotesClient from './LotesClient'
+import LotesClient, { type Lote, type Piquete } from './LotesClient'
 
 export default async function LotesPage() {
   const supabase = await createClient()
@@ -20,8 +20,8 @@ export default async function LotesPage() {
   const cookieStore = await cookies()
   const fazendaId = cookieStore.get('fazenda_id')?.value
 
-  let lotes = []
-  let piquetes = []
+  let lotes: Lote[] = []
+  let piquetes: Piquete[] = []
 
   if (fazendaId) {
     const [resLotes, resPiquetes] = await Promise.all([

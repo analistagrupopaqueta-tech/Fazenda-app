@@ -8,9 +8,9 @@ export default async function AtividadesPage() {
   const cookieStore = await cookies()
   const fazendaId = cookieStore.get('fazenda_id')?.value
 
-  let atividades = []
-  let produtos = []
-  let piquetes = []
+  let atividades: Atividade[] = []
+  let produtos: { id: string; nome: string; categoria: string }[] = []
+  let piquetes: { id: string; nome: string }[] = []
 
   if (fazendaId) {
     const [resAtiv, resProd, resPiq] = await Promise.all([
