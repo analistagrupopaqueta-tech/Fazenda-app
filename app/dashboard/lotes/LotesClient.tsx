@@ -468,7 +468,13 @@ export default function LotesClient({
                       onCancelar={() => setEditandoLote(null)}
                     />
                   ) : (
-                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                    <button
+                      onClick={() => {
+                        setShowNovoLote(false)
+                        setEditandoLote(lote)
+                      }}
+                      className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all duration-200"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -497,17 +503,8 @@ export default function LotesClient({
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            setShowNovoLote(false)
-                            setEditandoLote(lote)
-                          }}
-                          className="shrink-0 text-sm text-[var(--primary)] font-poppins font-semibold hover:underline"
-                        >
-                          Editar
-                        </button>
                       </div>
-                    </div>
+                    </button>
                   )}
                 </div>
               ))}
@@ -551,9 +548,15 @@ export default function LotesClient({
                       onCancelar={() => setEditandoPiquete(null)}
                     />
                   ) : (
-                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                    <button
+                      onClick={() => {
+                        setShowNovoPiquete(false)
+                        setEditandoPiquete(piquete)
+                      }}
+                      className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all duration-200"
+                    >
                       <div className="flex items-center justify-between gap-3">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-[var(--text)] font-poppins text-sm">
                               {piquete.nome}
@@ -564,7 +567,7 @@ export default function LotesClient({
                               </span>
                             )}
                           </div>
-                          <div className="flex gap-4 mt-0.5">
+                          <div className="flex gap-4 mt-0.5 flex-wrap">
                             {piquete.area_ha != null && (
                               <span className="text-xs text-gray-600 font-poppins block">
                                 📐 {piquete.area_ha} ha
@@ -582,17 +585,8 @@ export default function LotesClient({
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            setShowNovoPiquete(false)
-                            setEditandoPiquete(piquete)
-                          }}
-                          className="shrink-0 text-sm text-[var(--primary)] font-poppins font-semibold hover:underline"
-                        >
-                          Editar
-                        </button>
                       </div>
-                    </div>
+                    </button>
                   )}
                 </div>
               ))}

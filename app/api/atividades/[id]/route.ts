@@ -25,12 +25,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const { data, tipo, modalidade, produto_id, volume, unidade, quantidade_unidade, observacao } =
+    const { data, tipo, modalidade, produto_id, piquete_id, volume, unidade, quantidade_unidade, observacao } =
       await request.json()
 
-    if (!data || !tipo || !modalidade) {
+    if (!data || !tipo || !modalidade || !piquete_id) {
       return NextResponse.json(
-        { error: 'Data, tipo e modalidade são obrigatórios' },
+        { error: 'Data, tipo, modalidade e piquete são obrigatórios' },
         { status: 400 }
       )
     }
@@ -76,6 +76,7 @@ export async function PUT(
         tipo,
         modalidade,
         produto_id: produto_id || null,
+        piquete_id,
         volume: volume != null && volume !== '' ? Number(volume) : null,
         unidade: unidade || null,
         quantidade_unidade: quantidade_unidade != null && quantidade_unidade !== '' ? Number(quantidade_unidade) : null,

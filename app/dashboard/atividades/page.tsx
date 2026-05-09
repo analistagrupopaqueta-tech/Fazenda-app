@@ -10,12 +10,13 @@ export default async function AtividadesPage() {
 
   let atividades = []
   let produtos = []
+  let piquetes = []
 
   if (fazendaId) {
-    const [resAtiv, resProd] = await Promise.all([
+    const [resAtiv, resProd, resPiq] = await Promise.all([
       supabase
         .from('atividade')
-        .select('id, data, tipo, modalidade, volume, unidade, quantidade_unidade, observacao, produto_id, produto(nome)')
+        .select('id, data, tipo, modalidade, volume, unidade, quantidade_unidade, observacao, produto_id, produto(nome), piquete_id, piquete(nome)')
         .eq('fazenda_id', fazendaId)
         .order('data', { ascending: false })
         .limit(50),
@@ -24,11 +25,18 @@ export default async function AtividadesPage() {
         .select('id, nome, categoria')
         .eq('ativo', true)
         .eq('fazenda_id', fazendaId)
+        .order('nome'),
+      supabase
+        .from('piquete')
+        .select('id, nome')
+        .eq('ativo', true)
+        .eq('fazenda_id', fazendaId)
         .order('nome')
     ])
     
     atividades = resAtiv.data || []
     produtos = resProd.data || []
+    piquetes = resPiq.data || []
   }
 
   return (
@@ -42,7 +50,11 @@ export default async function AtividadesPage() {
         </p>
       </div>
 
-      <AtividadesClient atividades={atividades} produtosDisponiveis={produtos} />
+      <AtividadesClient 
+        atividades={atividades} 
+        produtosDisponiveis={produtos} 
+        piquetesDisponiveis={piquetes} 
+      />
     </div>
   )
 }

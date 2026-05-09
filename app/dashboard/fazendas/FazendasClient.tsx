@@ -228,7 +228,13 @@ export default function FazendasClient({
                     onCancelar={() => setEditandoFazenda(null)}
                   />
                 ) : (
-                  <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                  <button
+                    onClick={() => {
+                      setShowNovaFazenda(false)
+                      setEditandoFazenda(fazenda)
+                    }}
+                    className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all duration-200"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -245,17 +251,8 @@ export default function FazendasClient({
                           <p className="text-xs text-gray-500 font-poppins mt-0.5">📍 {fazenda.localizacao}</p>
                         )}
                       </div>
-                      <button
-                        onClick={() => {
-                          setShowNovaFazenda(false)
-                          setEditandoFazenda(fazenda)
-                        }}
-                        className="shrink-0 text-sm text-[var(--primary)] font-poppins font-semibold hover:underline"
-                      >
-                        Editar
-                      </button>
                     </div>
-                  </div>
+                  </button>
                 )}
               </div>
             ))}

@@ -10,6 +10,8 @@ export type Atividade = {
   modalidade: string
   produto_id: string | null
   produto: { nome: string } | null
+  piquete_id: string
+  piquete: { nome: string } | null
   quantidade_unidade: number | null
   volume: number | null
   unidade: string | null
@@ -62,6 +64,7 @@ type FormPayload = {
   tipo: TipoAtividade
   modalidade: string
   produto_id: string | null
+  piquete_id: string
   quantidade_unidade: number | null
   volume: number | null
   unidade: string | null
@@ -71,12 +74,14 @@ type FormPayload = {
 function AtividadeForm({
   modo,
   produtos,
+  piquetes,
   onSalvar,
   onExcluir,
   onCancelar,
 }: {
   modo: Modo
   produtos: { id: string, nome: string, categoria: string }[]
+  piquetes: { id: string, nome: string }[]
   onSalvar: (dados: FormPayload) => Promise<void>
   onExcluir?: () => Promise<void>
   onCancelar: () => void
@@ -86,6 +91,7 @@ function AtividadeForm({
   const hoje = new Date().toISOString().split('T')[0]
 
   const [data, setData] = useState(inicial?.data ?? hoje)
+  const [piqueteId, setPiqueteId] = useState(inicial?.piquete_id ?? '')
   const [tipo, setTipo] = useState<TipoAtividade | ''>(inicial?.tipo ?? '')
   const [modalidade, setModalidade] = useState(inicial?.modalidade ?? '')
   const [produtoId, setProdutoId] = useState(inicial?.produto_id ?? '')
@@ -108,6 +114,7 @@ function AtividadeForm({
 
   const isValido =
     data !== '' &&
+    piqueteId !== '' &&
     tipo !== '' &&
     modalidade !== '' &&
     (!produtoObrigatorio || produtoId !== '') &&
@@ -130,6 +137,7 @@ function AtividadeForm({
     try {
       await onSalvar({
         data,
+        piquete_id: piqueteId,
         tipo,
         modalidade,
         produto_id: temProduto && produtoId ? produtoId : null,
@@ -166,19 +174,39 @@ function AtividadeForm({
       </h2>
 
       <div className="space-y-4">
-        {/* Data */}
-        <div>
-          <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
-            Data <span className="text-[var(--error)]">*</span>
-          </label>
-          <input
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            max={hoje}
-            disabled={loading || excluindo}
-            className="w-full sm:w-48 px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Data */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
+              Data <span className="text-[var(--error)]">*</span>
+            </label>
+            <input
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              max={hoje}
+              disabled={loading || excluindo}
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition"
+            />
+          </div>
+
+          {/* Piquete */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
+              Piquete <span className="text-[var(--error)]">*</span>
+            </label>
+            <select
+              value={piqueteId}
+              onChange={(e) => setPiqueteId(e.target.value)}
+              disabled={loading || excluindo}
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition bg-white"
+            >
+              <option value="">Selecione...</option>
+              {piquetes.map((p) => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Tipo */}
@@ -411,10 +439,22 @@ function AtividadeForm({
   )
 }
 
-export default function AtividadesClient({ atividades, produtosDisponiveis }: { atividades: Atividade[], produtosDisponiveis: { id: string, nome: string, categoria: string }[] }) {
+export default function AtividadesClient({ 
+  atividades, 
+  produtosDisponiveis,
+  piquetesDisponiveis
+}: { 
+  atividades: Atividade[], 
+  produtosDisponiveis: { id: string, nome: string, categoria: string }[],
+  piquetesDisponiveis: { id: string, nome: string }[]
+}) {
   const router = useRouter()
   const [modo, setModo] = useState<Modo | null>(null)
   const [sucesso, setSucesso] = useState('')
+  const [view, setView] = useState<'lista' | 'calendario'>('lista')
+  
+  const [mesAtual, setMesAtual] = useState(new Date())
+  const [diaSelecionado, setDiaSelecionado] = useState<string | null>(null)
 
   const mostrarSucesso = (msg: string) => {
     setSucesso(msg)
@@ -456,6 +496,47 @@ export default function AtividadesClient({ atividades, produtosDisponiveis }: { 
     router.refresh()
   }
 
+  const atividadesAgrupadas = atividades.reduce((acc, ativ) => {
+    if (!acc[ativ.data]) acc[ativ.data] = []
+    acc[ativ.data].push(ativ)
+    return acc
+  }, {} as Record<string, Atividade[]>)
+
+  const year = mesAtual.getFullYear()
+  const month = mesAtual.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const firstDay = new Date(year, month, 1).getDay()
+
+  const diasCalendario = []
+  for (let i = 0; i < firstDay; i++) {
+    diasCalendario.push(null)
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    // Pad local dates safely
+    const mStr = String(month + 1).padStart(2, '0')
+    const dStr = String(i).padStart(2, '0')
+    diasCalendario.push(`${year}-${mStr}-${dStr}`)
+  }
+
+  const mesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  const hojeStr = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD
+
+  const currentYear = new Date().getFullYear()
+  let minYear = currentYear
+  let maxYear = currentYear
+
+  if (atividades.length > 0) {
+    const anosRegistrados = atividades.map(a => parseInt(a.data.substring(0, 4), 10))
+    minYear = Math.min(...anosRegistrados, currentYear)
+    maxYear = Math.max(...anosRegistrados, currentYear)
+  }
+
+  const anosDisponiveis = []
+  for (let i = minYear; i <= maxYear; i++) {
+    anosDisponiveis.push(i)
+  }
+
+
   return (
     <div>
       {sucesso && (
@@ -464,7 +545,33 @@ export default function AtividadesClient({ atividades, produtosDisponiveis }: { 
         </div>
       )}
 
-      {modo === null && (
+      {modo === null && atividades.length > 0 && (
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+          <button
+            onClick={() => setModo({ tipo: 'criar' })}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-[var(--primary)] text-white rounded-lg font-poppins font-semibold hover:bg-[#1a3009] transition-colors"
+          >
+            + Registrar Atividade
+          </button>
+
+          <div className="flex bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
+            <button
+              onClick={() => setView('lista')}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-poppins font-semibold transition-colors ${view === 'lista' ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Lista
+            </button>
+            <button
+              onClick={() => setView('calendario')}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-poppins font-semibold transition-colors ${view === 'calendario' ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Calendário
+            </button>
+          </div>
+        </div>
+      )}
+
+      {modo === null && atividades.length === 0 && (
         <button
           onClick={() => setModo({ tipo: 'criar' })}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-[var(--primary)] text-white rounded-lg font-poppins font-semibold hover:bg-[#1a3009] transition-colors mb-6"
@@ -477,6 +584,7 @@ export default function AtividadesClient({ atividades, produtosDisponiveis }: { 
         <AtividadeForm
           modo={modo}
           produtos={produtosDisponiveis}
+          piquetes={piquetesDisponiveis}
           onSalvar={handleCriar}
           onCancelar={() => setModo(null)}
         />
@@ -489,57 +597,204 @@ export default function AtividadesClient({ atividades, produtosDisponiveis }: { 
           <p className="text-sm mt-1">Clique em "Registrar Atividade" para começar.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {atividades.map((a) => (
-            <div key={a.id}>
-              {modo?.tipo === 'editar' && modo.atividade.id === a.id ? (
-                <AtividadeForm
-                  modo={modo}
-                  produtos={produtosDisponiveis}
-                  onSalvar={(dados) => handleEditar(a.id, dados)}
-                  onExcluir={() => handleExcluir(a.id)}
-                  onCancelar={() => setModo(null)}
-                />
-              ) : (
-                <button
-                  onClick={() => setModo({ tipo: 'editar', atividade: a })}
-                  className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all duration-200"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full font-poppins ${TIPO_CORES[a.tipo]}`}>
-                          {TIPO_ICONS[a.tipo as TipoAtividade]} {a.tipo}
-                        </span>
-                        <span className="text-sm font-semibold text-[var(--text)] font-poppins">
-                          {a.modalidade}
-                        </span>
+        <>
+          {view === 'lista' && (
+            <div className="space-y-3">
+              {atividades.map((a) => (
+                <div key={a.id}>
+                  {modo?.tipo === 'editar' && modo.atividade.id === a.id ? (
+                    <AtividadeForm
+                      modo={modo}
+                      produtos={produtosDisponiveis}
+                      piquetes={piquetesDisponiveis}
+                      onSalvar={(dados) => handleEditar(a.id, dados)}
+                      onExcluir={() => handleExcluir(a.id)}
+                      onCancelar={() => setModo(null)}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setModo({ tipo: 'editar', atividade: a })}
+                      className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full font-poppins ${TIPO_CORES[a.tipo]}`}>
+                              {TIPO_ICONS[a.tipo as TipoAtividade]} {a.tipo}
+                            </span>
+                            <span className="text-sm font-semibold text-[var(--text)] font-poppins">
+                              {a.modalidade}
+                            </span>
+                          </div>
+                          <div className="flex gap-3 mt-1.5 flex-wrap">
+                            <span className="text-xs text-gray-500 font-poppins">
+                              📅 {formatarData(a.data)}
+                            </span>
+                            {a.piquete && (
+                              <span className="text-xs text-gray-500 font-poppins">
+                                📍 Piquete: {a.piquete.nome}
+                              </span>
+                            )}
+                            {a.produto && (
+                              <span className="text-xs text-gray-500 font-poppins">
+                                🧪 {a.produto.nome}
+                              </span>
+                            )}
+                            {a.volume != null && a.unidade && (
+                              <span className="text-xs text-gray-500 font-poppins">
+                                📦 {a.volume} {a.unidade} {a.quantidade_unidade ? `(${a.quantidade_unidade})` : ''}
+                              </span>
+                            )}
+                          </div>
+                          {a.observacao && (
+                            <p className="text-xs text-gray-400 font-poppins mt-1">{a.observacao}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex gap-3 mt-1.5 flex-wrap">
-                        <span className="text-xs text-gray-500 font-poppins">
-                          📅 {formatarData(a.data)}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {view === 'calendario' && modo === null && (
+            <div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                {/* Header do Calendário */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                  <button onClick={() => { setMesAtual(new Date(year, month - 1, 1)); setDiaSelecionado(null) }} className="px-3 py-1.5 hover:bg-gray-50 rounded-lg text-gray-600 font-poppins font-medium text-sm transition-colors border border-gray-200">
+                    ← Anterior
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-bold text-[var(--primary)] font-poppins text-base sm:text-lg hidden sm:block">
+                      {mesNomes[month]} {year}
+                    </h3>
+                    <input
+                      type="date"
+                      value={diaSelecionado || (
+                        year === currentYear && month === new Date().getMonth() 
+                          ? hojeStr 
+                          : `${year}-${String(month + 1).padStart(2, '0')}-01`
+                      )}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const [y, m, d] = e.target.value.split('-')
+                          setMesAtual(new Date(Number(y), Number(m) - 1, 1))
+                          setDiaSelecionado(e.target.value)
+                        }
+                      }}
+                      className="w-[140px] px-2 py-1.5 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] transition bg-white"
+                    />
+                  </div>
+                  <button onClick={() => { setMesAtual(new Date(year, month + 1, 1)); setDiaSelecionado(null) }} className="px-3 py-1.5 hover:bg-gray-50 rounded-lg text-gray-600 font-poppins font-medium text-sm transition-colors border border-gray-200">
+                    Próximo →
+                  </button>
+                </div>
+                
+                {/* Cabeçalho dos dias */}
+                <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50 text-center">
+                  {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+                    <div key={d} className="py-2.5 text-xs font-bold text-gray-500 font-poppins tracking-wide uppercase">
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Células */}
+                <div className="grid grid-cols-7 auto-rows-[80px] sm:auto-rows-[110px]">
+                  {diasCalendario.map((dateStr, i) => {
+                    if (!dateStr) return <div key={`empty-${i}`} className="border-b border-r border-gray-50 bg-gray-50/30"></div>
+                    
+                    const ativs = atividadesAgrupadas[dateStr] || []
+                    const isSelected = diaSelecionado === dateStr
+                    const isToday = dateStr === hojeStr
+                    
+                    return (
+                      <button 
+                        key={dateStr}
+                        onClick={() => {
+                          if (ativs.length > 0) {
+                            setDiaSelecionado(isSelected ? null : dateStr)
+                          }
+                        }}
+                        disabled={ativs.length === 0}
+                        className={`relative border-b border-r border-gray-100 p-1.5 sm:p-2 flex flex-col items-start overflow-hidden transition-all
+                          ${ativs.length === 0 ? 'bg-white cursor-default' : isSelected ? 'bg-[var(--primary-light)]/10 border-[var(--primary)]/30 ring-inset ring-2 ring-[var(--primary)]/30' : 'hover:bg-gray-50 bg-white cursor-pointer'}
+                        `}
+                      >
+                        <span className={`text-[11px] sm:text-xs font-semibold font-poppins mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[var(--primary)] text-white' : 'text-gray-700'}`}>
+                          {dateStr.split('-')[2]}
                         </span>
-                        {a.produto && (
-                          <span className="text-xs text-gray-500 font-poppins">
-                            🧪 {a.produto.nome}
+                        
+                        <div className="flex flex-col gap-1 w-full overflow-y-auto scrollbar-hide">
+                          {ativs.slice(0, 3).map(a => (
+                            <div key={a.id} className={`text-[10px] truncate px-1.5 py-0.5 rounded font-poppins text-left ${TIPO_CORES[a.tipo]}`}>
+                              {TIPO_ICONS[a.tipo as TipoAtividade]} <span className="hidden sm:inline">{a.tipo}</span>
+                            </div>
+                          ))}
+                          {ativs.length > 3 && (
+                            <div className="text-[10px] text-gray-400 font-poppins font-medium pl-1">
+                              +{ativs.length - 3} mais
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Detalhes do dia selecionado */}
+              {diaSelecionado && atividadesAgrupadas[diaSelecionado] && (
+                <div className="bg-white rounded-xl p-5 shadow-md border-l-4 border-l-[var(--primary)]">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-[var(--text)] font-poppins">
+                      Atividades em {formatarData(diaSelecionado)}
+                    </h4>
+                    <button onClick={() => setDiaSelecionado(null)} className="text-gray-400 hover:text-gray-600 text-sm font-poppins">
+                      ✕ Fechar
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {atividadesAgrupadas[diaSelecionado].map((a) => (
+                      <div key={a.id} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full font-poppins ${TIPO_CORES[a.tipo]}`}>
+                            {TIPO_ICONS[a.tipo as TipoAtividade]} {a.tipo}
                           </span>
+                          <span className="text-xs font-semibold text-[var(--text)] font-poppins">
+                            {a.modalidade}
+                          </span>
+                        </div>
+                        {a.piquete && (
+                          <p className="text-[11px] text-gray-600 font-poppins mb-0.5">
+                            <span className="font-medium mr-1">📍 Piquete:</span>{a.piquete.nome}
+                          </p>
+                        )}
+                        {a.produto && (
+                          <p className="text-[11px] text-gray-600 font-poppins mb-0.5">
+                            <span className="font-medium mr-1">🧪 Produto:</span>{a.produto.nome}
+                          </p>
                         )}
                         {a.volume != null && a.unidade && (
-                          <span className="text-xs text-gray-500 font-poppins">
-                            📦 {a.volume} {a.unidade} {a.quantidade_unidade ? `(${a.quantidade_unidade})` : ''}
-                          </span>
+                          <p className="text-[11px] text-gray-600 font-poppins mb-0.5">
+                            <span className="font-medium mr-1">Volume:</span>{a.volume} {a.unidade} {a.quantidade_unidade ? `(${a.quantidade_unidade})` : ''}
+                          </p>
+                        )}
+                        {a.observacao && (
+                          <p className="text-[11px] text-gray-500 font-poppins italic mt-1.5 border-t border-gray-200 pt-1.5">
+                            "{a.observacao}"
+                          </p>
                         )}
                       </div>
-                      {a.observacao && (
-                        <p className="text-xs text-gray-400 font-poppins mt-1">{a.observacao}</p>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                </button>
+                </div>
               )}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   )
