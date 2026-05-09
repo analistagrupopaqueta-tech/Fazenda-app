@@ -25,11 +25,17 @@ export default async function ProdutosPage() {
   if (fazendaId) {
     const { data } = await supabase
       .from('produto')
-      .select('id, nome, categoria, ativo')
+      .select('id, nome, ativo, categoria_produto(nome)')
       .eq('fazenda_id', fazendaId)
-      .order('categoria')
-      .order('nome')
-    produtos = data || []
+
+    if (data) {
+      produtos = data.map((p: any) => ({
+        id: p.id,
+        nome: p.nome,
+        ativo: p.ativo,
+        categoria: p.categoria_produto?.nome || 'Desconhecida'
+      })).sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome))
+    }
   }
 
   return (

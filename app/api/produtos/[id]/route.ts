@@ -34,11 +34,21 @@ export async function PUT(
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
+    const { data: categoriaData, error: categoriaError } = await supabase
+      .from('categoria_produto')
+      .select('id')
+      .eq('nome', categoria)
+      .single()
+
+    if (categoriaError || !categoriaData) {
+      return NextResponse.json({ error: 'Categoria inválida' }, { status: 400 })
+    }
+
     const { error } = await supabase
       .from('produto')
       .update({
         nome: nome.trim(),
-        categoria,
+        categoria_id: categoriaData.id,
         ativo: ativo ?? true,
       })
       .eq('id', id)

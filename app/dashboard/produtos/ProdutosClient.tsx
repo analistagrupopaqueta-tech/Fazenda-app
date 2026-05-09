@@ -12,7 +12,20 @@ export type Produto = {
 
 type Modo = { tipo: 'criar' } | { tipo: 'editar'; registro: Produto }
 
-const CATEGORIAS = ['Adubação', 'Herbicida', 'Roçagem']
+const CATEGORIAS = ['Adubação', 'Herbicida', 'Roçagem'] as const
+type Categoria = typeof CATEGORIAS[number]
+
+const CATEGORIA_ICONS: Record<Categoria, string> = {
+  Adubação: '🌱',
+  Herbicida: '🧴',
+  Roçagem: '🌿',
+}
+
+const CATEGORIA_CORES: Record<Categoria, string> = {
+  Adubação: 'bg-green-100 text-green-700',
+  Herbicida: 'bg-blue-100 text-blue-700',
+  Roçagem: 'bg-yellow-100 text-yellow-700',
+}
 
 function ProdutoForm({
   modo,
@@ -46,8 +59,8 @@ function ProdutoForm({
         categoria: campos.categoria,
         ativo: campos.ativo,
       })
-    } catch {
-      setErro('Erro ao salvar. Tente novamente.')
+    } catch (err: any) {
+      setErro(err.message || 'Erro ao salvar. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -74,18 +87,28 @@ function ProdutoForm({
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[var(--text)] mb-1 font-poppins">
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-[var(--text)] mb-2 font-poppins">
             Categoria <span className="text-[var(--error)]">*</span>
           </label>
-          <select
-            value={campos.categoria}
-            onChange={(e) => setCampos({ ...campos, categoria: e.target.value as any })}
-            disabled={loading}
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg font-poppins text-sm focus:outline-none focus:border-[var(--primary)] disabled:bg-gray-100 transition bg-white"
-          >
-            {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <div className="grid grid-cols-3 gap-2">
+            {CATEGORIAS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCampos({ ...campos, categoria: c })}
+                disabled={loading}
+                className={`py-2.5 px-2 rounded-lg font-poppins font-semibold text-sm border-2 transition-colors flex flex-col items-center gap-1 ${
+                  campos.categoria === c
+                    ? 'bg-[var(--primary)] border-[var(--primary)] text-white'
+                    : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-xl">{CATEGORIA_ICONS[c]}</span>
+                <span className="text-xs leading-tight text-center">{c}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {editando && (
@@ -221,7 +244,10 @@ export default function ProdutosClient({ produtos }: { produtos: Produto[] }) {
                   onCancelar={() => setModo(null)}
                 />
               ) : (
-                <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                <button
+                  onClick={() => setModo({ tipo: 'editar', registro: produto })}
+                  className="w-full text-left bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 hover:border-[var(--primary)] hover:shadow-md transition-all duration-200"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -234,18 +260,12 @@ export default function ProdutosClient({ produtos }: { produtos: Produto[] }) {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500 font-poppins mt-0.5 block">
-                        📂 {produto.categoria}
+                      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full font-poppins mt-0.5 ${CATEGORIA_CORES[produto.categoria as Categoria] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {CATEGORIA_ICONS[produto.categoria as Categoria] ?? '📂'} {produto.categoria}
                       </span>
                     </div>
-                    <button
-                      onClick={() => setModo({ tipo: 'editar', registro: produto })}
-                      className="shrink-0 text-sm text-[var(--primary)] font-poppins font-semibold hover:underline"
-                    >
-                      Editar
-                    </button>
                   </div>
-                </div>
+                </button>
               )}
             </div>
           ))}

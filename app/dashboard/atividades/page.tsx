@@ -22,7 +22,7 @@ export default async function AtividadesPage() {
         .limit(50),
       supabase
         .from('produto')
-        .select('id, nome, categoria')
+        .select('id, nome, ativo, categoria_produto(nome)')
         .eq('ativo', true)
         .eq('fazenda_id', fazendaId)
         .order('nome'),
@@ -35,7 +35,11 @@ export default async function AtividadesPage() {
     ])
     
     atividades = resAtiv.data || []
-    produtos = resProd.data || []
+    produtos = (resProd.data || []).map((p: any) => ({
+      id: p.id,
+      nome: p.nome,
+      categoria: p.categoria_produto?.nome || '',
+    }))
     piquetes = resPiq.data || []
   }
 
