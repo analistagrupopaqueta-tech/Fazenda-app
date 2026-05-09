@@ -23,7 +23,7 @@ export default async function CochoPage() {
         .limit(50),
     ])
     lotes = resLotes.data || []
-    registros = resRegistros.data || []
+    registros = (resRegistros.data ?? []) as unknown as RegistroCocho[]
     error = resRegistros.error
   }
 

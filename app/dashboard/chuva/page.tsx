@@ -43,7 +43,7 @@ export default async function ChuvaPage({
         .single()
     ])
     
-    registros = res.data || []
+    registros = (res.data ?? []) as unknown as RegistroChuva[]
     error = res.error
 
     if (resUltimaChuva.data?.data) {

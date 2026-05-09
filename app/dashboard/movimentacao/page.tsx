@@ -43,7 +43,7 @@ export default async function MovimentacaoPage() {
     ])
     lotes = resLotes.data || []
     piquetes = resPiquetes.data || []
-    registros = resRegistros.data || []
+    registros = (resRegistros.data ?? []) as unknown as Movimentacao[]
     historico = resHistorico.data || []
     error = resRegistros.error
   }
